@@ -106,12 +106,14 @@ class PortfolioManager:
     
     def get(self, code: str) -> Optional[Dict]:
         """取得單一持股"""
+        print(f"[DEBUG] get() called with code: {repr(code)}")
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM portfolio WHERE code = ?", (code,))
         row = cursor.fetchone()
         conn.close()
+        print(f"[DEBUG] get() query result: {row}")
         
         if row:
             return {
