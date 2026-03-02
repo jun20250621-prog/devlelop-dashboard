@@ -76,9 +76,10 @@ def index():
 
 @app.route('/api/portfolio')
 def api_portfolio():
-    portfolio = pm.get_all()
+    portfolio = pm.get_all()  # now returns list
     stocks = []
-    for code, stock in portfolio.items():
+    for stock in portfolio:
+        code = stock.get('code', '')
         price_data = screener.get_daily_price(code, 1)
         current_price = 0
         change_pct = 0
@@ -87,7 +88,7 @@ def api_portfolio():
             current_price = latest.get('close', 0)
             spread = latest.get('spread', 0) or 0
             change_pct = (spread / (current_price - spread)) * 100 if current_price > spread else 0
-        pl = pm.calculate_profit_loss(code, current_price) if current_price > 0 else {'profit_loss': 0, 'profit_loss_pct': 0, 'stop_loss': 0, 'stop_profit': 0}
+        pl = pm.calculate_profit_loss_by_id(stock.get('id'), current_price) if current_price > 0 else {'profit_loss': 0, 'profit_loss_pct': 0}
         stocks.append({
             'id': stock.get('id'),
             'code': code,
@@ -768,12 +769,12 @@ def create_excel(data, columns, filename):
 @app.route('/api/export/portfolio')
 def api_export_portfolio():
     """匯出持股"""
-    portfolio = pm.get_all()
+    portfolio = pm.get_all()  # now returns list
     data = []
-    for code, stock in portfolio.items():
+    for stock in portfolio:
         data.append({
             'ID': stock.get('id', ''),
-            '股票代碼': code,
+            '股票代碼': stock.get('code', ''),
             '股票名稱': stock.get('name', ''),
             '成本價': stock.get('cost', 0),
             '股數': stock.get('shares', 0),
@@ -1040,11 +1041,12 @@ def send_telegram(message):
 def generate_report_message():
     """產生報告訊息"""
     try:
-        portfolio = pm.get_all()
+        portfolio = pm.get_all()  # now returns list
         msg = "📊 <b>持股報告</b>\n\n"
         
-        for code, stock in list(portfolio.items())[:10]:
+        for stock in portfolio[:10]:
             try:
+                code = stock.get('code', '')
                 price_data = screener.get_daily_price(code, 1)
                 if price_data:
                     current_price = price_data[-1].get('close', 0)
@@ -1378,7 +1380,7 @@ def send_daily_news_job():
         
         # 持股損益統計
         portfolio_stats = ""
-        for code, stock in list(portfolio.items())[:5]:
+        for stock in portfolio[:5]:
             price = stock.get('current_price', 0)
             cost = stock.get('cost', 0)
             if price and cost:

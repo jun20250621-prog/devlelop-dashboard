@@ -69,18 +69,18 @@ class PortfolioManager:
         conn.commit()
         conn.close()
     
-    def get_all(self) -> Dict:
+    def get_all(self) -> List[Dict]:
         """取得所有持股"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM portfolio")
+        cursor.execute("SELECT * FROM portfolio ORDER BY id")
         rows = cursor.fetchall()
         conn.close()
         
-        portfolio = {}
+        portfolio = []
         for row in rows:
-            portfolio[row['code']] = {
+            portfolio.append({
                 'id': row['id'],
                 'code': row['code'],
                 'name': row['name'],
@@ -106,11 +106,51 @@ class PortfolioManager:
                 'dividend_yield': row['dividend_yield'],
                 'analyst_target': row['analyst_target'],
                 'notes': row['notes']
-            }
+            })
         return portfolio
     
+    def get_by_id(self, id: int) -> Optional[Dict]:
+        """根據 ID 取得持股"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM portfolio WHERE id = ?", (id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return None
+        
+        return {
+            'id': row['id'],
+            'code': row['code'],
+            'name': row['name'],
+            'cost': row['cost'],
+            'shares': row['shares'],
+            'stop_loss': row['stop_loss'],
+            'stop_profit': row['stop_profit'],
+            'industry': row['industry'],
+            'application': row['application'],
+            'buy_date': row['buy_date'],
+            'current_price': row['current_price'],
+            'price_updated_at': row['price_updated_at'],
+            'profit_loss': row['profit_loss'],
+            'profit_loss_pct': row['profit_loss_pct'],
+            'change_pct': row['change_pct'],
+            'ma5': row['ma5'],
+            'ma20': row['ma20'],
+            'ma60': row['ma60'],
+            'rsi': row['rsi'],
+            'volume': row['volume'],
+            'pe_ratio': row['pe_ratio'],
+            'eps': row['eps'],
+            'dividend_yield': row['dividend_yield'],
+            'analyst_target': row['analyst_target'],
+            'notes': row['notes']
+        }
+    
     def get(self, code: str) -> Optional[Dict]:
-        """取得單一持股"""
+        """取得單一持股（兼容舊版）"""
         print(f"[DEBUG] get() called with code: {repr(code)}")
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
@@ -150,12 +190,12 @@ class PortfolioManager:
             }
         return None
     
-    def add(self, code: str, data: Dict) -> None:
-        """新增持股"""
+    def add(self, code: str, data: Dict) -> int:
+        """新增持股，返回新增的 ID"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT OR REPLACE INTO portfolio (
+            INSERT INTO portfolio (
                 code, name, cost, shares, stop_loss, stop_profit, 
                 industry, application, buy_date,
                 current_price, price_updated_at, profit_loss, profit_loss_pct, change_pct,
@@ -190,8 +230,10 @@ class PortfolioManager:
             data.get('analyst_target'),
             data.get('notes', ''),
         ))
+        new_id = cursor.lastrowid
         conn.commit()
         conn.close()
+        return new_id
     
     def update(self, code: str, data: Dict) -> None:
         """更新持股"""
@@ -245,6 +287,34 @@ class PortfolioManager:
         
         return {
             'code': code,
+            'name': stock.get('name'),
+            'cost': cost,
+            'shares': shares,
+            'current_price': current_price,
+            'cost_total': cost_total,
+            'current_total': current_total,
+            'profit_loss': profit_loss,
+            'profit_loss_pct': profit_loss_pct,
+            'stop_loss': stock.get('stop_loss'),
+            'stop_profit': stock.get('stop_profit')
+        }
+    
+    def calculate_profit_loss_by_id(self, id: int, current_price: float) -> Dict:
+        """根據 ID 計算損益"""
+        stock = self.get_by_id(id)
+        if not stock:
+            return {'profit_loss': 0, 'profit_loss_pct': 0}
+        
+        cost = stock.get('cost', 0)
+        shares = stock.get('shares', 0)
+        
+        cost_total = cost * shares
+        current_total = current_price * shares
+        profit_loss = current_total - cost_total
+        profit_loss_pct = (profit_loss / cost_total * 100) if cost_total > 0 else 0
+        
+        return {
+            'code': stock.get('code'),
             'name': stock.get('name'),
             'cost': cost,
             'shares': shares,
