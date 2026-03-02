@@ -1030,16 +1030,24 @@ def check_schedule():
         current_date = now.strftime("%Y-%m-%d")
         
         # 早盤
-        if current_time == schedule.get('morning', '08:30'):
+        morning_time = schedule.get('morning', '08:30')
+        if isinstance(morning_time, list):
+            morning_time = morning_time[0] if morning_time else '08:30'
+        if current_time == morning_time:
             send_telegram(f"🌅 <b>早盤提醒</b>\n\n今日日期: {current_date}\n\n記得追蹤大盤走勢！")
         
         # 監控時間
-        monitor_times = schedule.get('monitor', '').split(',')
-        if current_time in [t.strip() for t in monitor_times]:
+        monitor_times = schedule.get('monitor', '')
+        if isinstance(monitor_times, list):
+            monitor_times = ','.join(str(t) for t in monitor_times)
+        if monitor_times and current_time in [t.strip() for t in monitor_times.split(',')]:
             send_telegram(generate_report_message())
         
         # 晚盤
-        if current_time == schedule.get('evening', '15:00'):
+        evening_time = schedule.get('evening', '15:00')
+        if isinstance(evening_time, list):
+            evening_time = evening_time[0] if evening_time else '15:00'
+        if current_time == evening_time:
             msg = f"🌙 <b>盤後報告</b> - {current_date}\n\n" + generate_report_message()
             send_telegram(msg)
     except Exception as e:
