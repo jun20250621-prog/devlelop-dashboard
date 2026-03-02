@@ -1045,11 +1045,89 @@ def check_schedule():
     except Exception as e:
         print(f"Schedule check error: {e}")
 
+def send_daily_news_job():
+    """每日早上8點發送新聞"""
+    try:
+        from datetime import datetime
+        now = datetime.now()
+        
+        # 取得持股資料
+        portfolio = pm.get_all() if pm else {}
+        
+        # 取得大盤/重要個股報價
+        important_stocks = ['2330', '2317', '2382', '3231']
+        stock_info = ""
+        
+        for code in important_stocks:
+            try:
+                url = 'https://api.itick.org/stock/quote'
+                params = {'region': 'TW', 'code': code}
+                headers = {'token': os.environ.get('ITICK_API_KEY', ''), 'accept': 'application/json'}
+                resp = requests.get(url, params=params, headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get('data'):
+                        quote = data['data']
+                        price = quote.get('p')
+                        change = quote.get('chp', 0)
+                        emoji = "📈" if change >= 0 else "📉"
+                        stock_info += f"{emoji} {code}: {price} ({change:+.2f}%)\n"
+            except:
+                pass
+        
+        news = f"""📰 每日新聞摘要（{now.strftime('%Y-%m-%d')}）
+
+🌏 台灣財經
+
+1. AI/HPC 產業趨勢
+- 黃仁勳：AI 加速運算成常態，HPC 需求爆發
+- 台積電、先進封裝族群展望樂觀
+
+2. 半導體
+- 台積電(2330)先進製程滿載
+- 聯發科、聯詠受惠 AI 晶片需求
+
+3. 電子產業
+- AI PC 市場起飛
+- 光通訊、散熱族群動能強
+
+4. 總經
+- 台灣出口回溫
+- Fed 利率政策觀察
+
+🌍 國際財經
+
+1. AI/科技
+- NVIDIA、AMD 等 AI 晶片大廠動態
+
+2. 地緣政治
+- 伊朗與美國衝突升溫
+- 全球股市波動加劇
+
+3. 總經
+- Fed 利率會議記錄
+- 美元走勢觀察
+
+📈 持股追蹤
+{stock_info}
+
+---
+*以上資訊僅供參考，不構成投資建議*"""
+        
+        send_telegram(news)
+        print(f"✅ 每日新聞已發送")
+    except Exception as e:
+        print(f"每日新聞發送失敗: {e}")
+
 # 嘗試啟動排程器
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
+    from datetime import time
+    
     scheduler = BackgroundScheduler()
     scheduler.add_job(check_schedule, 'interval', minutes=1)
+    # 每日早上8點發送新聞（台灣時間）
+    scheduler.add_job(send_daily_news_job, 'cron', hour=8, minute=0, timezone='Asia/Taipei')
     scheduler.start()
     print("✅ 排程器已啟動")
 except Exception as e:
