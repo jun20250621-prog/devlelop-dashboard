@@ -63,7 +63,7 @@ class PortfolioManager:
         ''')
         # 檢查並移除舊的唯一約束（如果存在的話）
         try:
-            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_code ON portfolio(code)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_code ON portfolio(code)")
         except:
             pass
         conn.commit()
@@ -614,3 +614,20 @@ class PortfolioManager:
             'stop_profit': stop_profit,  # 保守 +10%
             'stop_profit_aggressive': stop_profit_aggressive  # 積極 +15%
         }
+
+    def migrate_remove_unique(self):
+        """移除舊的 unique 約束"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        try:
+            # 嘗試移除 UNIQUE 約束
+            cursor.execute("DROP INDEX IF EXISTS idx_code")
+        except:
+            pass
+        try:
+            # 重建一般索引
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_code ON portfolio(code)")
+        except:
+            pass
+        conn.commit()
+        conn.close()
