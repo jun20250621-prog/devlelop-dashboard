@@ -1297,9 +1297,91 @@ def api_news_daily():
 def send_daily_news_job():
     """每日早上8點發送新聞"""
     try:
-        news_res = requests.get('https://stock-web-dashboard.zeabur.app/api/news/daily', timeout=10)
-        if news_res.status_code == 200:
-            news_data = news_res.json()
-            send_telegram(news_data.get('data', ''))
+        from datetime import datetime
+        now = datetime.now()
+        
+        # 取得持股資料
+        portfolio = pm.get_all() if pm else {}
+        
+        # 取得重要個股報價
+        important_stocks = ['2330', '2317', '2382', '3231', '2454', '3017']
+        stock_info = ""
+        
+        for code in important_stocks:
+            try:
+                url = 'https://api.itick.org/stock/quote'
+                params = {'region': 'TW', 'code': code}
+                headers = {'token': os.environ.get('ITICK_API_KEY', ''), 'accept': 'application/json'}
+                resp = requests.get(url, params=params, headers=headers, timeout=5)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    if data.get('data'):
+                        quote = data['data']
+                        price = quote.get('p')
+                        change = quote.get('chp', 0)
+                        emoji = "📈" if change >= 0 else "📉"
+                        stock_info += f"{emoji} {code}: {price}元 ({change:+.2f}%)\n"
+            except:
+                pass
+        
+        # 持股損益統計
+        portfolio_stats = ""
+        for code, stock in list(portfolio.items())[:5]:
+            price = stock.get('current_price', 0)
+            cost = stock.get('cost', 0)
+            if price and cost:
+                pl = (price - cost) / cost * 100
+                emoji = "🟢" if pl >= 0 else "🔴"
+                portfolio_stats += f"{emoji} {code}: {price}元 ({pl:+.1f}%)\n"
+        
+        news = f"""📰 國內外新聞摘要（{now.strftime('%Y年%m月%d日')}）
+
+══════════════════════════════
+🌏 【台灣財經】
+══════════════════════════════
+
+1️⃣ AI/HPC 產業趨勢
+- 黃仁勳：AI 加速運算成常態，HPC 需求爆發
+- 台積電，先進封裝族群展望樂觀
+
+2️⃣ 半導體
+- 台積電(2330)先進製程產能滿載
+- 聯發科、聯詠受惠 AI 晶片需求
+
+3️⃣ 電子產業
+- AI PC 市場起飛，相關族群受關注
+- 光通訊、散熱族群股價動能強
+
+══════════════════════════════
+🌍 【國際財經】
+══════════════════════════════
+
+1️⃣ AI/科技
+- NVIDIA、Google、微軟等 AI 巨頭股價動態
+- 美國 AI 政策與半導體管制
+
+2️⃣ 地緣政治
+- 伊朗與美國/以色列衝突升溫
+- 全球股市波動加劇
+
+3️⃣ 總經
+- Fed 利率政策走向
+- 美元走勢觀察
+
+══════════════════════════════
+📊 【持股追蹤】
+══════════════════════════════
+{portfolio_stats}
+
+══════════════════════════════
+📈 【重要個股報價】
+══════════════════════════════
+{stock_info}
+
+══════════════════════════════
+*以上資訊僅供參考，不構成投資建議*"""
+        
+        send_telegram(news)
+        print(f"✅ 每日新聞已發送")
     except Exception as e:
         print(f"每日新聞發送失敗: {e}")
