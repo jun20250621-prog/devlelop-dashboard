@@ -195,7 +195,7 @@ class PortfolioManager:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO portfolio (
+            INSERT OR IGNORE INTO portfolio (
                 code, name, cost, shares, stop_loss, stop_profit, 
                 industry, application, buy_date,
                 current_price, price_updated_at, profit_loss, profit_loss_pct, change_pct,
@@ -655,3 +655,19 @@ try:
     _pm.migrate_fix_unique()
 except:
     pass
+
+    def force_remove_unique_constraint(self):
+        """強制移除 UNIQUE 約束 - 重建資料表"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        # 檢查是否存在 UNIQUE 約束
+        cursor.execute("PRAGMA index_list('portfolio')")
+        indexes = cursor.fetchall()
+        
+        for idx in indexes:
+            if idx[2] and 'code' in str(idx):
+                cursor.execute(f"DROP INDEX IF EXISTS {idx[1]}")
+        
+        conn.commit()
+        conn.close()

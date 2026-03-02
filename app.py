@@ -64,6 +64,7 @@ screener = TaiwanStockScreener()
 fugle_api_key = os.environ.get('FUGLE_API_KEY', config.get('fugle_api_key', ''))
 fugle = FugleClient(fugle_api_key) if fugle_api_key else None
 pm = PortfolioManager(config)
+pm.force_remove_unique_constraint()  # 強制移除 UNIQUE 約束
 wm = WatchlistManager(config)
 tj = TradeJournal(config)
 sl = StrategyLibrary(config)
