@@ -525,30 +525,57 @@ def api_portfolio_update_all_prices():
     try:
         import requests
         import os
+        from datetime import datetime, timedelta, timezone
         
         portfolio = pm.get_all()
         results = []
         itick_key = os.environ.get('ITICK_API_KEY', '')
         
+        # 取得日期範圍
+        taiwan_tz = timezone(timedelta(hours=8))
+        today = datetime.now(taiwan_tz).date()
+        start_date = (today - timedelta(days=30)).strftime('%Y-%m-%d')
+        end_date = today.strftime('%Y-%m-%d')
+        
         for code in portfolio:
             try:
-                url = 'https://api.itick.org/stock/quote'
-                params = {'region': 'TW', 'code': code.replace('.TW','')}
-                headers = {'token': itick_key, 'accept': 'application/json'}
-                
                 current_price = None
                 change_pct = None
                 
-                try:
-                    resp = requests.get(url, params=params, headers=headers, timeout=5)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        if data.get('data'):
-                            quote = data['data']
-                            current_price = quote.get('p')
-                            change_pct = quote.get('chp')
-                except:
-                    pass
+                # 先嘗試 iTick API
+                if itick_key:
+                    try:
+                        url = 'https://api.itick.org/stock/quote'
+                        params = {'region': 'TW', 'code': code.replace('.TW','')}
+                        headers = {'token': itick_key, 'accept': 'application/json'}
+                        
+                        resp = requests.get(url, params=params, headers=headers, timeout=5)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            if data.get('data'):
+                                quote = data['data']
+                                current_price = quote.get('p')
+                                change_pct = quote.get('chp')
+                    except:
+                        pass
+                
+                # 如果 iTick 失敗，使用 FinMind API (備用)
+                if not current_price:
+                    try:
+                        url = f"https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id={code}&start_date={start_date}&end_date={end_date}"
+                        resp = requests.get(url, timeout=10)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            if data.get('data') and len(data['data']) > 0:
+                                items = data['data']
+                                latest = items[-1]
+                                prev = items[-2] if len(items) >= 2 else latest
+                                current_price = float(latest.get('close', 0))
+                                prev_price = float(prev.get('close', 0))
+                                if prev_price:
+                                    change_pct = (current_price - prev_price) / prev_price * 100
+                    except:
+                        pass
                 
                 if current_price:
                     stock = pm.get(code)
