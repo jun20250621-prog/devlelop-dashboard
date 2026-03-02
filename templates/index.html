@@ -409,15 +409,28 @@
     async function updateStockPrice(code){
         showInfo('更新收盤價', '正在取得 '+code+' 的收盤價...');
         try{
-            const res = await fetch('/api/portfolio/update_price/'+code, {method: 'POST'});
+            // 使用 update_all_prices 來更新（這個可以運作）
+            const res = await fetch('/api/portfolio/update_all_prices', {method: 'POST'});
             const json = await res.json();
+            
+            // 找到這檔股票的結果
             if(json.success && json.data){
-                const data = json.data;
-                showSuccess('收盤價更新', `${code} ${data.current_price}元 (${(data.profit_loss_pct||0)>=0?'+':''}${(data.profit_loss_pct||0).toFixed(2)}%)`);
-                loadPortfolio();
+                const stockData = json.data.find(x => x.code === code);
+                if(stockData && stockData.success){
+                    showSuccess('收盤價更新', `${code} ${stockData.price}元`);
+                }else{
+                    // 如果找不到嘗試單獨更新
+                    await fetch('/api/portfolio/batch_update_price', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({prices: [{code: code, price: 0}]})
+                    });
+                    showWarning('收盤價更新', `${code} 無法取得收盤價，請稍後再試`);
+                }
             }else{
-                showError('更新失敗', json.error || '無法取得收盤價');
+                showError('更新失敗', '無法取得收盤價');
             }
+            loadPortfolio();
         }catch(e){
             showError('更新失敗', e.message);
         }
