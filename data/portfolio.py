@@ -629,45 +629,27 @@ class PortfolioManager:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_code ON portfolio(code)")
         except:
             pass
-        conn.commit()
-        conn.close()
-
-    def migrate_fix_unique(self):
-        """修復資料庫：移除 UNIQUE 約束"""
+        
+    def migrate_remove_unique(self):
+        """移除 UNIQUE 約束"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         try:
-            # 嘗試刪除舊的 UNIQUE 索引
             cursor.execute("DROP INDEX IF EXISTS idx_code")
         except:
             pass
         try:
-            # 建立新的非 UNIQUE 索引
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_code ON portfolio(code)")
         except:
             pass
         conn.commit()
         conn.close()
-        
-# 模組載入時自動執行遷移
-try:
-    _pm = PortfolioManager({})
-    _pm.migrate_fix_unique()
-except:
-    pass
 
-    def force_remove_unique_constraint(self):
-        """強制移除 UNIQUE 約束 - 重建資料表"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        # 檢查是否存在 UNIQUE 約束
-        cursor.execute("PRAGMA index_list('portfolio')")
-        indexes = cursor.fetchall()
-        
-        for idx in indexes:
-            if idx[2] and 'code' in str(idx):
-                cursor.execute(f"DROP INDEX IF EXISTS {idx[1]}")
-        
-        conn.commit()
-        conn.close()
+# 自動執行遷移
+if __name__ == "__main__":
+    try:
+        pm = PortfolioManager({})
+        pm.migrate_remove_unique()
+        print("Migration completed")
+    except Exception as e:
+        print(f"Migration error: {e}")
