@@ -89,6 +89,7 @@ def api_portfolio():
             change_pct = (spread / (current_price - spread)) * 100 if current_price > spread else 0
         pl = pm.calculate_profit_loss(code, current_price) if current_price > 0 else {'profit_loss': 0, 'profit_loss_pct': 0, 'stop_loss': 0, 'stop_profit': 0}
         stocks.append({
+            'id': stock.get('id'),
             'code': code,
             'name': stock.get('name'),
             'cost': stock.get('cost'),
@@ -464,6 +465,18 @@ def api_portfolio_analyze_all():
                 results.append(analysis)
         
         return jsonify({'success': True, 'data': results})
+    except Exception as e:
+        import traceback
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/portfolio/stops/<code>', methods=['GET'])
+def api_portfolio_stops(code):
+    """計算停損停利價"""
+    try:
+        result = pm.calculate_stop_loss_profit(code)
+        if result:
+            return jsonify({'success': True, 'data': result})
+        return jsonify({'success': False, 'error': '股票不存在'}), 404
     except Exception as e:
         import traceback
         return jsonify({'success': False, 'error': str(e)}), 500

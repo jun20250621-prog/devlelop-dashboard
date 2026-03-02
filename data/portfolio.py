@@ -29,7 +29,7 @@ class PortfolioManager:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS portfolio (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                code TEXT NOT NULL UNIQUE,
+                code TEXT NOT NULL,
                 name TEXT,
                 cost REAL,
                 shares INTEGER,
@@ -61,6 +61,11 @@ class PortfolioManager:
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        # 檢查並移除舊的唯一約束（如果存在的話）
+        try:
+            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_code ON portfolio(code)")
+        except:
+            pass
         conn.commit()
         conn.close()
     
@@ -500,3 +505,42 @@ class PortfolioManager:
             if result:
                 results.append(result)
         return results
+
+    def calculate_stop_loss_profit(self, code: str) -> Optional[Dict]:
+        """計算建議停損停利價"""
+        stock = self.get(code)
+        if not stock:
+            return None
+        
+        cost = stock.get('cost', 0)
+        current_price = stock.get('current_price', 0)
+        
+        if not cost or not current_price:
+            return None
+        
+        # 使用簡單的百分比計算
+        # 停損：-8% 到 -10%
+        # 停利：+10% 到 +15%
+        stop_loss = round(cost * 0.92, 2)  # 8% 停損
+        stop_loss_aggressive = round(cost * 0.90, 2)  # 10% 停損
+        
+        stop_profit = round(cost * 1.10, 2)  # 10% 停利
+        stop_profit_aggressive = round(cost * 1.15, 2)  # 15% 停利
+        
+        # 建議停損（根據風險承受度）
+        suggested_stop_loss = stop_loss
+        
+        # 計算現在的報酬率
+        profit_pct = (current_price - cost) / cost * 100
+        
+        return {
+            'code': code,
+            'name': stock.get('name'),
+            'cost': cost,
+            'current_price': current_price,
+            'profit_pct': round(profit_pct, 2),
+            'stop_loss_conservative': stop_loss_aggressive,  # 保守 -10%
+            'stop_loss': stop_loss,  # 一般 -8%
+            'stop_profit': stop_profit,  # 保守 +10%
+            'stop_profit_aggressive': stop_profit_aggressive  # 積極 +15%
+        }
