@@ -288,11 +288,13 @@ class PortfolioManager:
         # 確保 code 格式一致
         code = code.replace('.TW', '').replace('.TWO', '')
         
-        # 計算損益
+        # 計算損益 - 注意 current_price 可能是 0
         stock = self.get(code)
         print(f"[DEBUG] stock from DB: {stock}")
         
-        if stock and price_data.get('current_price'):
+        current_price = price_data.get('current_price')
+        
+        if stock and current_price is not None and current_price > 0:
             cost = stock.get('cost', 0)
             shares = stock.get('shares', 0)
             current_price = price_data.get('current_price')
