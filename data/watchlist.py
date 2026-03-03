@@ -117,14 +117,23 @@ class WatchlistManager:
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE watchlist SET 
-                name = ?, target_price = ?, reason = ?, industry = ?, add_date = ?, updated_at = datetime('now')
+                name = COALESCE(?, name),
+                target_price = COALESCE(?, target_price),
+                reason = COALESCE(?, reason),
+                industry = COALESCE(?, industry),
+                add_date = COALESCE(?, add_date),
+                current_price = COALESCE(?, current_price),
+                change_pct = COALESCE(?, change_pct),
+                updated_at = datetime('now')
             WHERE code = ?
         ''', (
-            data.get('name', ''),
+            data.get('name'),
             data.get('target_price'),
-            data.get('reason', ''),
-            data.get('industry', ''),
-            data.get('add_date', ''),
+            data.get('reason'),
+            data.get('industry'),
+            data.get('add_date'),
+            data.get('current_price'),
+            data.get('change_pct'),
             code
         ))
         conn.commit()
