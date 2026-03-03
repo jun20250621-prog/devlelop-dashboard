@@ -491,8 +491,8 @@ def api_portfolio_update_price(code):
         import requests
         import os
         
-        # 直接使用 iTick API 取得現價
-        itick_key = os.environ.get('ITICK_API_KEY', '')
+        # 使用 iTick API 取得現價
+        itick_key = ITICK_API_KEY  # 使用全域變數
         url = 'https://api.itick.org/stock/quote'
         params = {'region': 'TW', 'code': code.replace('.TW','')}
         headers = {'token': itick_key, 'accept': 'application/json'}
