@@ -170,75 +170,169 @@ def send_telegram():
 
 @app.route('/api/import/portfolio', methods=['POST'])
 def import_portfolio():
-    """匯入持股資料"""
+    """匯入持股資料 - 支援 Excel xlsx 和 JSON"""
     try:
         data = request.json.get('data', '')
         if not data:
             return jsonify({'success': False, 'error': '無資料'})
         
         import base64
+        import io
+        
+        # 嘗試解碼 base64
         try:
-            json_str = base64.b64decode(data).decode('utf-8')
+            file_data = base64.b64decode(data)
         except:
-            # 嘗試直接解碼（如果已經是 JSON 字串）
-            json_str = data
+            # 可能是直接傳 JSON 字串
+            try:
+                portfolio = json.loads(data)
+                config['portfolio'] = portfolio
+                with open('config.json', 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                return jsonify({'success': True})
+            except:
+                return jsonify({'success': False, 'error': '資料格式錯誤'})
         
+        # 嘗試解析為 Excel
         try:
-            portfolio = json.loads(json_str)
-        except:
-            return jsonify({'success': False, 'error': '資料格式錯誤，請確認匯出格式正確'})
-        
-        config['portfolio'] = portfolio
-        with open('config.json', 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-        
-        return jsonify({'success': True})
+            import pandas as pd
+            df = pd.read_excel(io.BytesIO(file_data))
+            # 轉換為 dict 格式
+            portfolio = {}
+            for _, row in df.iterrows():
+                code = str(row.get('代號', row.get('code', '')))
+                if code and code != 'nan':
+                    portfolio[code] = {
+                        'name': str(row.get('名稱', row.get('name', ''))),
+                        'cost': float(row.get('成本', row.get('cost', 0))),
+                        'shares': int(row.get('股數', row.get('shares', 1000))),
+                        'stop_loss': float(row.get('停損', row.get('stop_loss', 0))) if pd.notna(row.get('停損', row.get('stop_loss'))) else None,
+                        'stop_profit': float(row.get('停利', row.get('stop_profit', 0))) if pd.notna(row.get('停利', row.get('stop_profit'))) else None
+                    }
+            config['portfolio'] = portfolio
+            with open('config.json', 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            return jsonify({'success': True})
+        except Exception as e:
+            # 非 Excel 格式，嘗試 JSON
+            try:
+                json_str = file_data.decode('utf-8')
+                portfolio = json.loads(json_str)
+                config['portfolio'] = portfolio
+                with open('config.json', 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                return jsonify({'success': True})
+            except:
+                return jsonify({'success': False, 'error': '無法解析檔案格式: ' + str(e)})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/import/watchlist', methods=['POST'])
 def import_watchlist():
-    """匯入觀察名單"""
+    """匯入觀察名單 - 支援 Excel xlsx 和 JSON"""
     try:
         data = request.json.get('data', '')
         if not data:
             return jsonify({'success': False, 'error': '無資料'})
         
         import base64
+        import io
+        
         try:
-            json_str = base64.b64decode(data).decode('utf-8')
+            file_data = base64.b64decode(data)
         except:
-            json_str = data
+            try:
+                watchlist = json.loads(data)
+                config['watchlist'] = watchlist
+                with open('config.json', 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                return jsonify({'success': True})
+            except:
+                return jsonify({'success': False, 'error': '資料格式錯誤'})
         
-        watchlist = json.loads(json_str)
-        config['watchlist'] = watchlist
-        with open('config.json', 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-        
-        return jsonify({'success': True})
+        try:
+            import pandas as pd
+            df = pd.read_excel(io.BytesIO(file_data))
+            watchlist = []
+            for _, row in df.iterrows():
+                code = str(row.get('代號', row.get('code', '')))
+                if code and code != 'nan':
+                    watchlist.append({
+                        'code': code,
+                        'name': str(row.get('名稱', row.get('name', '')))
+                    })
+            config['watchlist'] = watchlist
+            with open('config.json', 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            return jsonify({'success': True})
+        except:
+            try:
+                json_str = file_data.decode('utf-8')
+                watchlist = json.loads(json_str)
+                config['watchlist'] = watchlist
+                with open('config.json', 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                return jsonify({'success': True})
+            except:
+                return jsonify({'success': False, 'error': '無法解析檔案格式'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/import/trades', methods=['POST'])
 def import_trades():
-    """匯入交易紀錄"""
+    """匯入交易紀錄 - 支援 Excel xlsx 和 JSON"""
     try:
         data = request.json.get('data', '')
         if not data:
             return jsonify({'success': False, 'error': '無資料'})
         
         import base64
+        import io
+        
         try:
-            json_str = base64.b64decode(data).decode('utf-8')
+            file_data = base64.b64decode(data)
         except:
-            json_str = data
+            try:
+                trades = json.loads(data)
+                config['trades'] = trades
+                with open('config.json', 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                return jsonify({'success': True})
+            except:
+                return jsonify({'success': False, 'error': '資料格式錯誤'})
         
-        trades = json.loads(json_str)
-        config['trades'] = trades
-        with open('config.json', 'w', encoding='utf-8') as f:
-            json.dump(config, f, indent=2, ensure_ascii=False)
-        
-        return jsonify({'success': True})
+        try:
+            import pandas as pd
+            df = pd.read_excel(io.BytesIO(file_data))
+            trades = []
+            for _, row in df.iterrows():
+                trade = {}
+                if pd.notna(row.get('日期', row.get('date'))):
+                    trade['date'] = str(row.get('日期', row.get('date')))
+                if pd.notna(row.get('代號', row.get('code'))):
+                    trade['code'] = str(row.get('代號', row.get('code')))
+                if pd.notna(row.get('買/賣', row.get('action'))):
+                    trade['action'] = str(row.get('買/賣', row.get('action')))
+                if pd.notna(row.get('價格', row.get('price'))):
+                    trade['price'] = float(row.get('價格', row.get('price')))
+                if pd.notna(row.get('數量', row.get('quantity'))):
+                    trade['quantity'] = int(row.get('數量', row.get('quantity')))
+                if trade:
+                    trades.append(trade)
+            config['trades'] = trades
+            with open('config.json', 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2, ensure_ascii=False)
+            return jsonify({'success': True})
+        except:
+            try:
+                json_str = file_data.decode('utf-8')
+                trades = json.loads(json_str)
+                config['trades'] = trades
+                with open('config.json', 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                return jsonify({'success': True})
+            except:
+                return jsonify({'success': False, 'error': '無法解析檔案格式'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
