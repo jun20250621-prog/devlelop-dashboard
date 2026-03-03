@@ -35,10 +35,24 @@ class WatchlistManager:
                 reason TEXT,
                 industry TEXT,
                 add_date TEXT,
+                current_price REAL DEFAULT 0,
+                change_pct REAL DEFAULT 0,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        conn.commit()
+        
+        # Migration: add columns if not exist
+        try:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN current_price REAL DEFAULT 0")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE watchlist ADD COLUMN change_pct REAL DEFAULT 0")
+        except:
+            pass
+        
         conn.commit()
         conn.close()
     
