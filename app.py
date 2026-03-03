@@ -690,6 +690,7 @@ def api_watchlist_update_all_prices():
     """更新所有觀察名單的股價"""
     try:
         watchlist = wm.get_all()
+        updated = 0
         for item in watchlist:
             code = item.get('code')
             if code:
@@ -700,11 +701,12 @@ def api_watchlist_update_all_prices():
                             'current_price': price_data.get('price'),
                             'change_pct': price_data.get('change_pct')
                         })
+                        updated += 1
                 except Exception as e:
                     print(f"更新 {code} 價格失敗: {e}")
                     continue
         reload_config()
-        return jsonify({'success': True, 'updated': len(watchlist)})
+        return jsonify({'success': True, 'updated': updated})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -1464,3 +1466,27 @@ def send_daily_news_job():
         print(f"✅ 每日新聞已發送")
     except Exception as e:
         print(f"每日新聞發送失敗: {e}")
+
+# ==================== iTick 股價取得 ====================
+ITICK_API_KEY = "ae7824e15cc34160bfe303310973ea9a77ee3c6b1c314202b2ff1bd23db02729"
+
+def get_stock_price(code):
+    """使用 iTick 取得股票報價"""
+    if code.startswith('00') or code.endswith('B'):
+        return None  # 不支援 ETF
+    
+    try:
+        import urllib.parse
+        url = "https://api.itick.org/stock/quote"
+        params = urllib.parse.urlencode({"region": "TW", "code": code})
+        headers = {'accept': 'application/json', 'token': ITICK_API_KEY}
+        req = urllib.request.Request(f"{url}?{params}", headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data.get('code') == 0 and data.get('data'):
+                d = data['data']
+                return {'price': d.get('p', 0), 'change_pct': d.get('chp', 0)}
+    except:
+        pass
+    return None
+
