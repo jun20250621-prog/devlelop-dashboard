@@ -166,6 +166,68 @@ def send_telegram():
     resp = requests.post(url, json={"chat_id": chat_id, "text": message})
     return jsonify({'success': resp.status_code == 200})
 
+# ==================== 匯入匯出 API ====================
+
+@app.route('/api/import/portfolio', methods=['POST'])
+def import_portfolio():
+    """匯入持股資料"""
+    try:
+        data = request.json.get('data', '')
+        if not data:
+            return jsonify({'success': False, 'error': '無資料'})
+        
+        import base64
+        json_str = base64.b64decode(data).decode('utf-8')
+        portfolio = json.loads(json_str)
+        
+        config['portfolio'] = portfolio
+        with open('config.json', 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/import/watchlist', methods=['POST'])
+def import_watchlist():
+    """匯入觀察名單"""
+    try:
+        data = request.json.get('data', '')
+        if not data:
+            return jsonify({'success': False, 'error': '無資料'})
+        
+        import base64
+        json_str = base64.b64decode(data).decode('utf-8')
+        watchlist = json.loads(json_str)
+        
+        config['watchlist'] = watchlist
+        with open('config.json', 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/import/trades', methods=['POST'])
+def import_trades():
+    """匯入交易紀錄"""
+    try:
+        data = request.json.get('data', '')
+        if not data:
+            return jsonify({'success': False, 'error': '無資料'})
+        
+        import base64
+        json_str = base64.b64decode(data).decode('utf-8')
+        trades = json.loads(json_str)
+        
+        config['trades'] = trades
+        with open('config.json', 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 if __name__ == '__main__':
     print("🚀 啟動網頁版...")
     print("📍 http://localhost:5000")
