@@ -1,11 +1,11 @@
 {
   "portfolio": {
-    "2331": {"name": "精英", "cost": 27.4, "shares": 1000, "stop_loss": 24, "stop_profit": 35},
-    "5392": {"name": "能率", "cost": 52.6, "shares": 1000, "stop_loss": 47, "stop_profit": 65},
-    "3287": {"name": "廣寰科", "cost": 29.9, "shares": 1000, "stop_loss": 25.5, "stop_profit": 39},
-    "2317": {"name": "鴻海", "cost": 224, "shares": 1000},
-    "00687B": {"name": "國泰20年美債", "cost": 29.35, "shares": 1000},
-    "1773": {"name": "勝一", "cost": 147, "shares": 1000}
+    "2331": {"name": "精英", "cost": 27.4, "shares": 1000, "stop_loss": 24, "stop_profit": 35, "industry": "電腦週邊", "application": "主機板/顯示卡"},
+    "5392": {"name": "能率", "cost": 52.6, "shares": 1000, "stop_loss": 47, "stop_profit": 65, "industry": "光電", "application": "鋁合金壓鑄"},
+    "3287": {"name": "廣寰科", "cost": 29.9, "shares": 1000, "stop_loss": 25.5, "stop_profit": 39, "industry": "電腦週邊", "application": "電競耳機/充电器"},
+    "2317": {"name": "鴻海", "cost": 224, "shares": 1000, "stop_loss": 200, "stop_profit": 270, "industry": "電子代工", "application": "AI伺服器/蘋果供應鏈"},
+    "00687B": {"name": "國泰20年美債", "cost": 29.35, "shares": 1000, "stop_loss": 28, "stop_profit": 32, "industry": "債券ETF", "application": "美國國債"},
+    "1773": {"name": "勝一", "cost": 147, "shares": 1000, "stop_loss": 130, "stop_profit": 180, "industry": "化學", "application": "有機溶劑"}
   },
   "watchlist": [
     {"code": "2543", "name": "皇昌"},
