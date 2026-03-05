@@ -61,7 +61,7 @@ def monitor(args):
                         change = index_data.get('change', 0)
                         change_pct = index_data.get('change_pct', 0)
                         status = "🟢" if change >= 0 else "🔴"
-                        print(".2f")
+                        print(f"  {index_name}: {price:.2f} ({change:+.2f}, {change_pct:+.1f}%)")
                 print()
         except Exception as e:
             print(f"⚠️ 獲取市場指數失敗: {e}")
@@ -80,7 +80,7 @@ def monitor(args):
                     volume = stock.get('volume', 0)
 
                     status = "🟢" if change_pct >= 0 else "🔴"
-                    print("2d")
+                    print(f"  {i:2d}. {code:>4} {name:8} {price:>8.0f} {status} {change_pct:+.2f}%")
             else:
                 print("  無數據")
             print()
@@ -101,7 +101,7 @@ def monitor(args):
                     volume = stock.get('volume', 0)
 
                     status = "🔴" if change_pct < 0 else "🟢"
-                    print("2d")
+                    print(f"  {i:2d}. {code:>4} {name:8} {price:>8.0f} {status} {change_pct:+.2f}%")
             else:
                 print("  無數據")
             print()
@@ -117,8 +117,8 @@ def monitor(args):
                 print(f"  上漲家數: {market_stats.get('advancing', 0)}")
                 print(f"  下跌家數: {market_stats.get('declining', 0)}")
                 print(f"  持平家數: {market_stats.get('unchanged', 0)}")
-                print(".1f")
-                print(".1f")
+                print(f"  漲跌比: {market_stats.get('advance_decline_ratio', 1.0):.1f}")
+                print(f"  成交量: {market_stats.get('total_volume', 0):,.0f}")
             else:
                 print("  無數據")
             print()
@@ -138,7 +138,7 @@ def monitor(args):
                     price = stock.get('price', 0)
                     change_pct = stock.get('change_pct', 0)
 
-                    print("2d")
+                    print(f"  {i}. {code:>4} {name:8} {price:>8.0f} 評分: {score:.1f}/10")
             else:
                 print("  無符合條件的股票")
             print()
