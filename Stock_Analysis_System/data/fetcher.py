@@ -233,7 +233,11 @@ class StockDataFetcher:
                         continue
                     
                     current = data['Close'].iloc[-1]
-                    prev = data['Close'].iloc[0]
+                    # 與昨日收盤價比較（倒數第二筆）
+                    if len(data) >= 2:
+                        prev = data['Close'].iloc[-2]  # 昨天收盤
+                    else:
+                        prev = data['Close'].iloc[0]
                     change_pct = ((current - prev) / prev) * 100
                     
                     gainers.append({
