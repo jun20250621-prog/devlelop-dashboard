@@ -247,9 +247,16 @@ class StockDataFetcher:
                     logger.debug(f"無法獲取 {code}: {e}")
                     continue
             
-            # 按漲幅排序
+            # 去除重複（按漲幅排序後取第一個）
+            seen = set()
+            unique_gainers = []
             gainers.sort(key=lambda x: x.get('change_pct', 0), reverse=True)
-            return gainers[:limit]
+            for g in gainers:
+                if g['code'] not in seen:
+                    seen.add(g['code'])
+                    unique_gainers.append(g)
+            
+            return unique_gainers[:limit]
             
         except Exception as e:
             logger.error(f"獲取漲幅前股票失敗: {e}")
