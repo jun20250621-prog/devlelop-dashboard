@@ -524,54 +524,238 @@ def auto(args):
 
 def portfolio_import(args):
     """匯入持股"""
+    from data.database import DatabaseManager
+    
     if not args.file:
         print("請指定檔案路徑，例如: python stock_cli.py portfolio import --file portfolio.xlsx")
         return
-    print(f"匯入持股檔案: {args.file} - 尚未實作")
+    
+    try:
+        import pandas as pd
+        db = DatabaseManager()
+        
+        df = pd.read_excel(args.file)
+        print(f"📥 正在匯入持股 from {args.file}...")
+        
+        for _, row in df.iterrows():
+            db.add_portfolio(
+                code=str(row.get('code', '')),
+                name=str(row.get('name', '')),
+                shares=int(row.get('shares', 0)),
+                cost=float(row.get('cost', 0)),
+                industry=str(row.get('industry', '')),
+                application=str(row.get('application', '')),
+                buy_date=str(row.get('buy_date', '')),
+                stop_loss=float(row.get('stop_loss', 0)),
+                stop_profit=float(row.get('stop_profit', 0))
+            )
+        
+        print(f"✅ 成功匯入 {len(df)} 筆持股資料")
+        
+    except Exception as e:
+        print(f"❌ 匯入失敗: {e}")
 
 
 def portfolio_export(args):
     """匯出持股"""
+    from data.database import DatabaseManager
+    
     file_path = args.file or "portfolio.xlsx"
-    print(f"匯出持股到: {file_path} - 尚未實作")
+    
+    try:
+        import pandas as pd
+        db = DatabaseManager()
+        
+        portfolio = db.get_portfolio()
+        
+        if not portfolio:
+            print("⚠️ 沒有持股資料")
+            return
+        
+        df = pd.DataFrame(portfolio)
+        df.to_excel(file_path, index=False)
+        print(f"✅ 成功匯出 {len(portfolio)} 筆持股到 {file_path}")
+        
+    except Exception as e:
+        print(f"❌ 匯出失敗: {e}")
+
+
+def portfolio(args):
+    """持股管理"""
+    from data.database import DatabaseManager
+    
+    db = DatabaseManager()
+    portfolio = db.get_portfolio()
+    
+    if not portfolio:
+        print("📋 目前沒有持股資料")
+        return
+    
+    print("📋 持股列表")
+    print("-" * 60)
+    print(f"{'代碼':<8} {'名稱':<12} {'股數':<8} {'成本':<10} {'目前價格':<10}")
+    print("-" * 60)
+    
+    for stock in portfolio:
+        print(f"{stock['code']:<8} {stock['name']:<12} {stock['shares']:<8} ${stock['cost']:<9.2f} ${stock.get('current_price', 0):<10.2f}")
+    
+    print(f"\n共 {len(portfolio)} 檔股票")
 
 
 def watchlist_import(args):
     """匯入觀察名單"""
+    from data.database import DatabaseManager
+    
     if not args.file:
         print("請指定檔案路徑，例如: python stock_cli.py watchlist import --file watchlist.xlsx")
         return
-    print(f"匯入觀察名單檔案: {args.file} - 尚未實作")
+    
+    try:
+        import pandas as pd
+        db = DatabaseManager()
+        
+        df = pd.read_excel(args.file)
+        print(f"📥 正在匯入觀察名單 from {args.file}...")
+        
+        for _, row in df.iterrows():
+            db.add_watchlist(
+                code=str(row.get('code', '')),
+                name=str(row.get('name', '')),
+                target_price=float(row.get('target_price', 0)) if pd.notna(row.get('target_price')) else None,
+                reason=str(row.get('reason', '')),
+                industry=str(row.get('industry', ''))
+            )
+        
+        print(f"✅ 成功匯入 {len(df)} 筆觀察名單")
+        
+    except Exception as e:
+        print(f"❌ 匯入失敗: {e}")
 
 
 def watchlist_export(args):
     """匯出觀察名單"""
+    from data.database import DatabaseManager
+    
     file_path = args.file or "watchlist.xlsx"
-    print(f"匯出觀察名單到: {file_path} - 尚未實作")
+    
+    try:
+        import pandas as pd
+        db = DatabaseManager()
+        
+        watchlist = db.get_watchlist()
+        
+        if not watchlist:
+            print("⚠️ 沒有觀察名單資料")
+            return
+        
+        df = pd.DataFrame(watchlist)
+        df.to_excel(file_path, index=False)
+        print(f"✅ 成功匯出 {len(watchlist)} 筆觀察名單到 {file_path}")
+        
+    except Exception as e:
+        print(f"❌ 匯出失敗: {e}")
+
+
+def watchlist(args):
+    """觀察名單"""
+    from data.database import DatabaseManager
+    
+    db = DatabaseManager()
+    watchlist = db.get_watchlist()
+    
+    if not watchlist:
+        print("📋 目前沒有觀察名單")
+        return
+    
+    print("📋 觀察名單")
+    print("-" * 60)
+    print(f"{'代碼':<8} {'名稱':<12} {'目標價':<10} {'原因':<20}")
+    print("-" * 60)
+    
+    for stock in watchlist:
+        print(f"{stock['code']:<8} {stock['name']:<12} ${stock.get('target_price', 0):<10.2f} {stock.get('reason', ''):<20}")
+    
+    print(f"\n共 {len(watchlist)} 檔股票")
 
 
 def trade_add(args):
     """新增交易紀錄"""
-    print("新增交易紀錄 - 尚未實作")
-    print("將互動式新增交易記錄")
+    print("新增交易紀錄 - 請使用互動式介面")
+    print("範例: python stock_cli.py trade add 2330 buy 100 500")
 
 
 def trade_list(args):
     """查看交易紀錄"""
-    print("查看交易紀錄 - 尚未實作")
-    print("將顯示所有交易記錄")
+    from data.database import DatabaseManager
+    
+    db = DatabaseManager()
+    trades = db.get_trades()
+    
+    if not trades:
+        print("📋 目前沒有交易紀錄")
+        return
+    
+    print("📋 交易紀錄")
+    print("-" * 80)
+    print(f"{'日期':<12} {'代碼':<8} {'名稱':<10} {'動作':<6} {'股數':<6} {'價格':<10} {'總金額':<12}")
+    print("-" * 80)
+    
+    for trade in trades:
+        action = "買入" if trade['action'] == 'buy' else "賣出"
+        print(f"{trade.get('trade_date', ''):<12} {trade['code']:<8} {trade.get('name', ''):<10} {action:<6} {trade['shares']:<6} ${trade['price']:<9.2f} ${trade['total_amount']:<11.2f}")
+    
+    print(f"\n共 {len(trades)} 筆交易")
 
 
 def trade_analyze(args):
     """分析交易表現"""
-    print("分析交易表現 - 尚未實作")
-    print("將分析交易成功率、報酬率等")
+    from data.database import DatabaseManager
+    
+    db = DatabaseManager()
+    trades = db.get_trades()
+    
+    if not trades:
+        print("⚠️ 沒有交易紀錄可分析")
+        return
+    
+    # 計算統計
+    buys = [t for t in trades if t['action'] == 'buy']
+    sells = [t for t in trades if t['action'] == 'sell']
+    
+    total_buy = sum(t['total_amount'] for t in buys)
+    total_sell = sum(t['total_amount'] for t in sells)
+    
+    print("📊 交易分析")
+    print("-" * 40)
+    print(f"總買入次數: {len(buys)}")
+    print(f"總賣出次數: {len(sells)}")
+    print(f"總買入金額: ${total_buy:,.2f}")
+    print(f"總賣出金額: ${total_sell:,.2f}")
+    print(f"損益: ${total_sell - total_buy:,.2f}")
 
 
 def trade_export(args):
     """匯出交易紀錄"""
+    from data.database import DatabaseManager
+    
     file_path = args.file or "trades.xlsx"
-    print(f"匯出交易紀錄到: {file_path} - 尚未實作")
+    
+    try:
+        import pandas as pd
+        db = DatabaseManager()
+        
+        trades = db.get_trades()
+        
+        if not trades:
+            print("⚠️ 沒有交易紀錄")
+            return
+        
+        df = pd.DataFrame(trades)
+        df.to_excel(file_path, index=False)
+        print(f"✅ 成功匯出 {len(trades)} 筆交易到 {file_path}")
+        
+    except Exception as e:
+        print(f"❌ 匯出失敗: {e}")
 
 
 def strategy_add(args):
@@ -582,20 +766,36 @@ def strategy_add(args):
 
 def strategy_list(args):
     """查看策略庫"""
-    print("查看策略庫 - 尚未實作")
-    print("將顯示所有交易策略")
+    from data.database import DatabaseManager
+    
+    db = DatabaseManager()
+    
+    # 預設策略列表
+    default_strategies = [
+        {'name': 'MA_Cross', 'description': '均線交叉策略', 'parameters': '{"ma_short": 5, "ma_long": 20}'},
+        {'name': 'RSI_Strategy', 'description': 'RSI 超買超賣策略', 'parameters': '{"rsi_period": 14, "oversold": 30, "overbought": 70}'},
+        {'name': 'MACD_Strategy', 'description': 'MACD 訊號線策略', 'parameters': '{"fast": 12, "slow": 26, "signal": 9}'},
+    ]
+    
+    print("📋 內建策略庫")
+    print("-" * 60)
+    print(f"{'策略名稱':<20} {'說明':<30}")
+    print("-" * 60)
+    
+    for s in default_strategies:
+        print(f"{s['name']:<20} {s['description']:<30}")
+    
+    print(f"\n共 {len(default_strategies)} 個策略")
 
 
 def strategy_analyze(args):
     """分析策略表現"""
     print("分析策略表現 - 尚未實作")
-    print("將分析策略成功率、報酬等")
 
 
 def strategy_export(args):
     """匯出策略"""
-    file_path = args.file or "strategies.xlsx"
-    print(f"匯出策略到: {file_path} - 尚未實作")
+    print("匯出策略 - 尚未實作")
 
 
 def main(args=None):
@@ -653,6 +853,10 @@ def main(args=None):
     portfolio_parser = subparsers.add_parser("portfolio", help="持股管理")
     portfolio_sub = portfolio_parser.add_subparsers(dest="action")
 
+    # 持股查看
+    view_parser = portfolio_sub.add_parser("view", help="查看持股")
+    view_parser.set_defaults(func=portfolio)
+
     # 持股匯入
     import_parser = portfolio_sub.add_parser("import", help="匯入持股")
     import_parser.add_argument("--file", "-f", required=True, help="Excel檔案路徑")
@@ -666,6 +870,10 @@ def main(args=None):
     # 觀察名單管理
     watchlist_parser = subparsers.add_parser("watchlist", help="觀察名單管理")
     watchlist_sub = watchlist_parser.add_subparsers(dest="action")
+
+    # 觀察名單查看
+    watch_view = watchlist_sub.add_parser("view", help="查看觀察名單")
+    watch_view.set_defaults(func=watchlist)
 
     # 觀察名單匯入
     watch_import = watchlist_sub.add_parser("import", help="匯入觀察名單")
