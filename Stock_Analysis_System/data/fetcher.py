@@ -217,16 +217,55 @@ class StockDataFetcher:
             股票列表
         """
         try:
-            # 模擬漲幅前股票的數據
-            gainers = [
-                {'code': '3515', 'name': '華擎科技', 'price': 145.5, 'change_pct': 5.2, 'volume': 1000000},
-                {'code': '3623', 'name': '奇磊科技', 'price': 89.3, 'change_pct': 4.8, 'volume': 800000},
-                {'code': '9910', 'name': '豐祥控股', 'price': 56.2, 'change_pct': 4.5, 'volume': 600000},
+            # 常用熱門股票列表
+            popular_stocks = [
+                '2330', '2454', '2317', '2382', '3711', '3231', '3034', '4952',
+                '3545', '3443', '6269', '3443', '3034', '2458', '2379', '3034',
+                '2317', '2412', '2002', '2823', '2882', '2891', '5880'
             ]
+            
+            gainers = []
+            for code in popular_stocks:
+                try:
+                    ticker = yf.Ticker(f"{code}.TW")
+                    data = ticker.history(period="5d")
+                    if data.empty or len(data) < 2:
+                        continue
+                    
+                    current = data['Close'].iloc[-1]
+                    prev = data['Close'].iloc[0]
+                    change_pct = ((current - prev) / prev) * 100
+                    
+                    gainers.append({
+                        'code': code,
+                        'name': self._get_stock_name(code),
+                        'price': current,
+                        'change_pct': change_pct,
+                        'volume': data['Volume'].iloc[-1] if 'Volume' in data else 0
+                    })
+                except Exception as e:
+                    logger.debug(f"無法獲取 {code}: {e}")
+                    continue
+            
+            # 按漲幅排序
+            gainers.sort(key=lambda x: x.get('change_pct', 0), reverse=True)
             return gainers[:limit]
+            
         except Exception as e:
             logger.error(f"獲取漲幅前股票失敗: {e}")
             return []
+
+    def _get_stock_name(self, code: str) -> str:
+        """取得股票名稱"""
+        # 股票代碼對照表
+        name_map = {
+            '2330': '台積電', '2454': '聯發科', '2317': '鴻海', '2382': '廣達',
+            '3711': '日月光', '3231': '緯創', '3034': '聯詠', '4952': '凌通',
+            '3545': '敦泰', '3443': '創意', '6269': '台郡', '2458': '義隆',
+            '2379': '瑞昱', '2412': '中華電', '2002': '中鋼', '2823': '中壽',
+            '2882': '國泰金', '2891': '中信金', '5880': '合庫金', '0050': '元大台灣50'
+        }
+        return name_map.get(code, code)
 
     def get_top_losers(self, limit: int = 10) -> List[Dict[str, Any]]:
         """
@@ -272,7 +311,7 @@ class StockDataFetcher:
 
     def get_strong_stocks(self, limit: int = 5) -> List[Dict[str, Any]]:
         """
-        獲取強勢股
+        獲取強勢股（根據技術指標評分）
         
         Args:
             limit: 返回股票數量
@@ -281,12 +320,58 @@ class StockDataFetcher:
             股票列表
         """
         try:
-            strong_stocks = [
-                {'code': '2330', 'name': '台積電', 'price': 1865.0, 'change_pct': 2.5, 'technical_score': 8.5},
-                {'code': '0050', 'name': '元大台灣50', 'price': 145.0, 'change_pct': 2.0, 'technical_score': 8.0},
-                {'code': '2454', 'name': '聯發科', 'price': 1200.0, 'change_pct': 1.8, 'technical_score': 7.8},
+            # 熱門股票列表
+            popular_stocks = [
+                {'code': '2330', 'name': '台積電'}, {'code': '2454', 'name': '聯發科'},
+                {'code': '2317', 'name': '鴻海'}, {'code': '2382', 'name': '廣達'},
+                {'code': '3711', 'name': '日月光'}, {'code': '3231', 'name': '緯創'},
+                {'code': '3034', 'name': '聯詠'}, {'code': '0050', 'name': '元大台灣50'},
+                {'code': '2458', 'name': '義隆'}, {'code': '2379', 'name': '瑞昱'}
             ]
+            
+            strong_stocks = []
+            for stock in popular_stocks:
+                try:
+                    code = stock['code']
+                    ticker = yf.Ticker(f"{code}.TW")
+                    data = ticker.history(period="20d")
+                    
+                    if data.empty or len(data) < 10:
+                        continue
+                    
+                    # 簡單技術評分
+                    current = data['Close'].iloc[-1]
+                    ma5 = data['Close'].iloc[-5:].mean()
+                    ma20 = data['Close'].mean() if len(data) >= 20 else ma5
+                    
+                    # 評分邏輯
+                    score = 0
+                    if current > ma5: score += 3
+                    if current > ma20: score += 2
+                    if len(data) >= 5:
+                        change_5d = (data['Close'].iloc[-1] - data['Close'].iloc[-5]) / data['Close'].iloc[-5] * 100
+                        if change_5d > 0: score += 2
+                        if change_5d > 5: score += 3
+                    
+                    # 計算漲跌幅
+                    prev_price = data['Close'].iloc[0]
+                    change_pct = ((current - prev_price) / prev_price) * 100
+                    
+                    strong_stocks.append({
+                        'code': code,
+                        'name': stock['name'],
+                        'price': current,
+                        'change_pct': change_pct,
+                        'technical_score': min(score, 10)  # 最高10分
+                    })
+                except Exception as e:
+                    logger.debug(f"無法分析 {stock['code']}: {e}")
+                    continue
+            
+            # 按技術分數排序
+            strong_stocks.sort(key=lambda x: x.get('technical_score', 0), reverse=True)
             return strong_stocks[:limit]
+            
         except Exception as e:
             logger.error(f"獲取強勢股失敗: {e}")
             return []
