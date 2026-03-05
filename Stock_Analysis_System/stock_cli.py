@@ -439,8 +439,12 @@ def strategy_export(args):
     print(f"匯出策略到: {file_path} - 尚未實作")
 
 
-def main():
+def main(args=None):
     """主函式"""
+    # 如果沒有傳入args，預設使用sys.argv[1:]
+    if args is None:
+        args = sys.argv[1:]
+    
     parser = argparse.ArgumentParser(
         prog="stock_cli",
         description="台股智能分析系統 CLI 版本",
@@ -557,7 +561,7 @@ def main():
     strategy_export_parser.set_defaults(func=strategy_export)
 
     # 解析引數
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     # 檢查是否有指定命令
     if not args.command:

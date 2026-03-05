@@ -163,7 +163,8 @@ def main():
 
         # 啟動 CLI 介面
         try:
-            cli_main()
+            # 傳遞命令列參數
+            cli_main(sys.argv[1:] if len(sys.argv) > 1 else [])
         except KeyboardInterrupt:
             logger.info("收到中斷訊號，正在關閉...")
         except Exception as e:
