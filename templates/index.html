@@ -59,6 +59,7 @@
             </a>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item"><a class="nav-link" href="javascript:loadAll()"><i class="fas fa-sync-alt me-1"></i>重新整理</a></li>
+                <li class="nav-item"><span class="nav-link text-light"><i class="fas fa-clock me-1"></i>自動刷新: <span id="autoRefreshTimer">0</span></span></li>
                 <li class="nav-item"><button class="nav-link btn btn-link" data-bs-toggle="modal" data-bs-target="#scheduleModal"><i class="fas fa-clock me-1"></i>排程設定</button></li>
                 <li class="nav-item"><button class="nav-link btn btn-link" onclick="toggleDebugLog()"><i class="fas fa-bug me-1"></i>除錯LOG</button></li>
                 <li class="nav-item"><a class="nav-link" href="javascript:generateSample()"><i class="fas fa-magic me-1"></i>產生樣本</a></li>
@@ -986,6 +987,20 @@
         }; reader.readAsDataURL(file);
     }
     async function generateSample(){ await fetch('/api/sample/generate',{method:'POST'}); loadTrades(); loadAnalysis(); alert('已產生5筆範例交易資料!'); }
+
+    // Auto-refresh every 60 seconds
+    let autoRefreshCount = 0;
+    function autoRefresh() {
+        autoRefreshCount++;
+        const timer = document.getElementById('autoRefreshTimer');
+        if(timer) timer.textContent = autoRefreshCount;
+        loadPortfolio();
+        loadWatchlist();
+        loadTrades();
+        loadAnalysis();
+        loadMarketIndices();
+    }
+    setInterval(autoRefresh, 60000);
 
     document.addEventListener('DOMContentLoaded', loadAll);
     </script>
