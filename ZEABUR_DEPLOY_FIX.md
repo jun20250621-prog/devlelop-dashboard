@@ -58,7 +58,8 @@ cc3f693 修復 Dockerfile 使用 gunicorn port 8080
 ---
 
 ## 部署網址
-- Zeabur: https://stock-web-dashboard.zeabur.app
+- P1 (devlelop-dashboard): https://devlelop-dashboard.zeabur.app
+- P2 (stock-web-dashboard): https://stock-web-dashboard.zeabur.app
 - Vercel: https://stock-web-dashboard.vercel.app
 
 ---
