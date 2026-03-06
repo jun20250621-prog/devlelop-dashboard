@@ -55,7 +55,7 @@
     <nav class="navbar navbar-dark navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="javascript:location.reload()">
-                <i class="fas fa-chart-line me-2"></i>台股智能分析系統 <span class="badge bg-warning text-dark">v1.17</span>
+                <i class="fas fa-chart-line me-2"></i>台股智能分析系統 <span class="badge bg-warning text-dark">v1.16</span>
             </a>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item"><a class="nav-link" href="javascript:loadAll()"><i class="fas fa-sync-alt me-1"></i>重新整理</a></li>
@@ -634,14 +634,6 @@
 
     async function loadWatchlist(){
         try{
-            // 顯示更新訊息
-            showInfo('觀察名單', '正在更新報價...');
-            
-            // 先呼叫更新股價 API
-            try{
-                await fetch('/api/watchlist/update_all_prices', {method:'POST'});
-            }catch(e){ console.log('更新股價失敗', e); }
-            
             const resp = await fetch('/api/watchlist?t=' + Date.now());
             watchlistData = await resp.json();
             let html = ''; watchlistData.forEach(s => {
@@ -649,8 +641,7 @@
                 html += `<tr><td><b>${s.code}</b></td><td>${s.name||''}</td><td>${s.current_price||'-'}</td><td>${s.target_price||'-'}</td><td class="${cc}">${(s.change_pct||0)>=0?'+':''}${(s.change_pct||0).toFixed(2)}%</td><td>${s.industry||'-'}</td><td>${s.reason||''}</td><td>${s.add_date||'-'}</td><td><button class="btn btn-sm btn-outline-primary me-1" onclick="editWatchlist('${s.code}')"><i class="fas fa-edit"></i></button><button class="btn btn-sm btn-outline-danger" onclick="deleteWatchlist('${s.code}')"><i class="fas fa-trash"></i></button></td></tr>`;
             });
             document.querySelector('#watchlistTable tbody').innerHTML = html || '<tr><td colspan="8" class="text-center">無觀察名單</td></tr>';
-            showSuccess('觀察名單', '報價更新完成');
-        }catch(e){ console.error(e); showError('觀察名單', '載入失敗'); }
+        }catch(e){ console.error(e); }
     }
 
     function getStrategyName(id){

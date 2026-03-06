@@ -684,29 +684,6 @@ def api_watchlist_update(code):
         import traceback
         return jsonify({'error': str(e), 'trace': traceback.format_exc()}), 500
 
-@app.route('/api/watchlist/update_all_prices', methods=['POST'])
-def api_watchlist_update_all_prices():
-    """更新所有觀察名單的股價"""
-    try:
-        watchlist = wm.get_all()
-        for item in watchlist:
-            code = item.get('code')
-            if code:
-                try:
-                    price_data = get_stock_price(code)
-                    if price_data:
-                        wm.update(code, {
-                            'current_price': price_data.get('price'),
-                            'change_pct': price_data.get('change_pct')
-                        })
-                except Exception as e:
-                    print(f"更新 {code} 價格失敗: {e}")
-                    continue
-        reload_config()
-        return jsonify({'success': True, 'updated': len(watchlist)})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
 @app.route('/api/trade/add', methods=['POST'])
 def api_trade_add():
     data = request.json
