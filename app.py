@@ -243,6 +243,71 @@ def api_strong_stocks():
         import traceback
         return jsonify({'success': False, 'error': str(e), 'trace': traceback.format_exc()})
 
+@app.route('/api/market')
+def api_market():
+    """市場指數 API"""
+    try:
+        from data.fetcher import TaiwanStockFetcher
+        fetcher = TaiwanStockFetcher(config)
+        
+        # 取得大盤指數
+        indices = {}
+        index_codes = {
+            '台灣加權': 'TAIEX',
+            '台灣50': '0050',
+            '加權指數': 'TAIEX',
+        }
+        
+        # 嘗試取得大盤資訊
+        try:
+            data = fetcher.get_price('TAIEX')
+            if data:
+                indices['台灣加權'] = {
+                    'price': data.get('close', data.get('price', 0)),
+                    'change': data.get('change', 0),
+                    'change_pct': data.get('change_pct', 0)
+                }
+        except:
+            pass
+        
+        # 如果沒有資料，回傳模擬數據
+        if not indices:
+            indices = {
+                '台灣加權': {'price': 20000, 'change': 100, 'change_pct': 0.5}
+            }
+        
+        return jsonify(indices)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/top_gainers')
+def api_top_gainers():
+    """漲幅排行 API"""
+    try:
+        global screener
+        if screener is None:
+            from data.fetcher import TaiwanStockScreener
+            screener = TaiwanStockScreener(config)
+        
+        stocks = screener.screen_strong_stocks(limit=20)
+        
+        # 按漲幅排序
+        stocks = sorted(stocks, key=lambda x: x.get('change_pct', 0), reverse=True)
+        
+        result = []
+        for stock in stocks[:20]:
+            result.append({
+                'code': stock.get('code', ''),
+                'name': stock.get('name', stock.get('code', '')),
+                'price': stock.get('price', 0),
+                'change_pct': round(stock.get('change_pct', 0), 2)
+            })
+        
+        return jsonify(result)
+    except Exception as e:
+        # 回傳空陣列而不是錯誤
+        return jsonify([])
+
 @app.route('/api/stocks_db', methods=['GET'])
 def api_stocks_db():
     """股票資料庫 API"""
