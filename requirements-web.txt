@@ -1,0 +1,4 @@
+# Flask Web Application for Stock Analysis System
+
+flask>=2.3.0
+flask-cors>=4.0.0
