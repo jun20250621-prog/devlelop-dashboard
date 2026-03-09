@@ -16,13 +16,22 @@ import json
 import time
 from pathlib import Path
 import os
-from dotenv import load_dotenv
+
+# 嘗試導入 dotenv，如果不存在則跳過
+try:
+    from dotenv import load_dotenv
+    DOTENV_AVAILABLE = True
+except ImportError:
+    DOTENV_AVAILABLE = False
+    def load_dotenv(*args, **kwargs):
+        """Dummy function if dotenv not available"""
+        pass
 
 logger = logging.getLogger(__name__)
 
 # 載入環境變數
 env_path = Path(__file__).parent.parent / '.env'
-if env_path.exists():
+if env_path.exists() and DOTENV_AVAILABLE:
     load_dotenv(env_path)
 
 

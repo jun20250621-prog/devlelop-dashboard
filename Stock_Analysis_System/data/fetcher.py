@@ -16,15 +16,15 @@ from typing import Dict, List, Optional, Any
 import pickle
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 # 導入即時數據獲取器
 try:
     from .realtime_fetcher import get_realtime_fetcher
     REALTIME_ENABLED = True
-except ImportError:
+except ImportError as e:
     REALTIME_ENABLED = False
-    logger.warning("即時數據獲取器未啟用，將使用傳統數據源")
-
-logger = logging.getLogger(__name__)
+    logger.warning(f"即時數據獲取器未啟用，將使用傳統數據源: {e}")
 
 
 class FundamentalFetcher:
