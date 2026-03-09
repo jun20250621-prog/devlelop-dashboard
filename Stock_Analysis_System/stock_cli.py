@@ -1000,6 +1000,18 @@ def strategy_export(args):
         print(f"❌ 錯誤: {e}")
 
 
+def system_usage(args):
+    """查看系統使用率統計"""
+    try:
+        from usage_report import print_usage_report
+        print_usage_report()
+    except ImportError as e:
+        print(f"❌ 錯誤：無法載入使用率報告模組: {e}")
+        print("請確保 usage_report.py 與此檔案在同一目錄")
+    except Exception as e:
+        print(f"❌ 錯誤: {e}")
+
+
 def data_source_status(args):
     """查看數據源狀態"""
     try:
@@ -1211,6 +1223,10 @@ def main(args=None):
     # 數據源狀態檢查
     status_parser = subparsers.add_parser("status", help="查看數據源狀態")
     status_parser.set_defaults(func=data_source_status)
+    
+    # 系統使用率統計
+    usage_parser = subparsers.add_parser("usage", help="查看系統使用率統計")
+    usage_parser.set_defaults(func=system_usage)
 
     # 解析引數
     args = parser.parse_args(args)
