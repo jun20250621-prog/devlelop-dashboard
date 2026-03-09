@@ -1000,6 +1000,85 @@ def strategy_export(args):
         print(f"❌ 錯誤: {e}")
 
 
+def data_source_status(args):
+    """查看數據源狀態"""
+    try:
+        print("=" * 80)
+        print("📡 數據源狀態檢查")
+        print(f"檢查時間: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("=" * 80)
+        
+        # 初始化 StockDataFetcher
+        fetcher = StockDataFetcher(use_realtime=True)
+        status = fetcher.get_data_source_status()
+        
+        print(f"\n即時數據: {'✅ 已啟用' if status['realtime_enabled'] else '❌ 未啟用'}")
+        
+        if status['realtime_enabled'] and 'sources' in status:
+            print("\n" + "-" * 80)
+            print("數據源可用性:")
+            print("-" * 80)
+            
+            sources_info = {
+                'fugle': ('Fugle API (富果)', '< 1 分鐘', '付費 API，最快速'),
+                'twse': ('台灣證交所 API', '1-5 分鐘', '免費，官方數據'),
+                'finmind': ('FinMind API', '5-15 分鐘', '免費，台股專用'),
+                'yahoo': ('Yahoo Finance', '15-20 分鐘', '免費，全球市場')
+            }
+            
+            available_count = 0
+            for source_key in ['fugle', 'twse', 'finmind', 'yahoo']:
+                is_available = status['sources'].get(source_key, False)
+                name, latency, description = sources_info.get(source_key, (source_key, 'N/A', ''))
+                
+                status_icon = '✅' if is_available else '❌'
+                print(f"\n{status_icon} {name}")
+                print(f"   延遲: {latency}")
+                print(f"   說明: {description}")
+                print(f"   狀態: {'可用' if is_available else '不可用'}")
+                
+                if is_available:
+                    available_count += 1
+            
+            print("\n" + "-" * 80)
+            print(f"可用數據源: {available_count}/4")
+            
+            # 測試即時報價
+            if available_count > 0:
+                print("\n" + "=" * 80)
+                print("🧪 測試即時報價功能")
+                print("-" * 80)
+                
+                import time
+                test_code = '2330'  # 台積電
+                print(f"\n測試股票: {test_code} (台積電)")
+                
+                start_time = time.time()
+                quote = fetcher.get_realtime_quote(test_code)
+                elapsed = (time.time() - start_time) * 1000
+                
+                if quote:
+                    print(f"✅ 成功獲取報價 (耗時: {elapsed:.0f}ms)")
+                    print(f"   價格: ${quote['price']:.2f}")
+                    print(f"   漲跌: {quote['change']:+.2f} ({quote['change_pct']:+.2f}%)")
+                    print(f"   數據源: {quote.get('data_source', 'unknown')}")
+                    print(f"   數據時間: {quote.get('time', 'N/A')}")
+                else:
+                    print(f"❌ 獲取報價失敗 (耗時: {elapsed:.0f}ms)")
+        else:
+            print("\n⚠️ 即時數據未啟用，使用傳統數據源 (Yahoo Finance)")
+            print("   延遲: 15-20 分鐘")
+        
+        print("\n" + "=" * 80)
+        print("✅ 數據源狀態檢查完成")
+        print("=" * 80)
+        
+    except Exception as e:
+        print(f"❌ 錯誤: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 def main(args=None):
     """主函式"""
     # 如果沒有傳入args，預設使用sys.argv[1:]
@@ -1128,6 +1207,10 @@ def main(args=None):
     strategy_export_parser = strategy_sub.add_parser("export", help="匯出策略")
     strategy_export_parser.add_argument("--file", "-f", help="輸出檔案路徑 (預設: strategies.xlsx)")
     strategy_export_parser.set_defaults(func=strategy_export)
+    
+    # 數據源狀態檢查
+    status_parser = subparsers.add_parser("status", help="查看數據源狀態")
+    status_parser.set_defaults(func=data_source_status)
 
     # 解析引數
     args = parser.parse_args(args)

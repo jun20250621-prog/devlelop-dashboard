@@ -16,6 +16,14 @@ from typing import Dict, List, Optional, Any
 import pickle
 from pathlib import Path
 
+# 導入即時數據獲取器
+try:
+    from .realtime_fetcher import get_realtime_fetcher
+    REALTIME_ENABLED = True
+except ImportError:
+    REALTIME_ENABLED = False
+    logger.warning("即時數據獲取器未啟用，將使用傳統數據源")
+
 logger = logging.getLogger(__name__)
 
 
@@ -96,10 +104,24 @@ class FundamentalFetcher:
 class StockDataFetcher:
     """股票數據獲取器"""
 
-    def __init__(self):
+    def __init__(self, use_realtime: bool = True):
         self.fundamental_fetcher = FundamentalFetcher()
         self.cache_dir = Path(__file__).parent.parent / "cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 初始化即時數據獲取器
+        self.use_realtime = use_realtime and REALTIME_ENABLED
+        if self.use_realtime:
+            try:
+                self.realtime_fetcher = get_realtime_fetcher()
+                logger.info("即時數據獲取器已啟用")
+            except Exception as e:
+                logger.warning(f"即時數據獲取器初始化失敗: {e}，將使用傳統數據源")
+                self.use_realtime = False
+                self.realtime_fetcher = None
+        else:
+            self.realtime_fetcher = None
+            logger.info("使用傳統數據源 (Yahoo Finance)")
         
         # 台灣股市休市日期
         self.holidays = [
@@ -179,12 +201,23 @@ class StockDataFetcher:
 
     def get_market_index(self) -> Dict[str, Dict[str, float]]:
         """
-        獲取市場指數
+        獲取市場指數 (優先使用即時數據)
         
         Returns:
             包含市場指數信息的字典
         """
         try:
+            # 優先使用即時數據獲取器
+            if self.use_realtime and self.realtime_fetcher:
+                try:
+                    market_data = self.realtime_fetcher.get_market_index_realtime()
+                    if market_data:
+                        logger.info("使用即時數據獲取市場指數")
+                        return market_data
+                except Exception as e:
+                    logger.warning(f"即時數據獲取失敗，切換到 Yahoo Finance: {e}")
+            
+            # 備用方案：使用 Yahoo Finance
             market_data = {}
             
             # 台灣加權指數
@@ -195,7 +228,8 @@ class StockDataFetcher:
                     market_data['加權指數'] = {
                         'price': taiex_data['Close'].iloc[-1],
                         'change': taiex_data['Close'].iloc[-1] - taiex_data['Open'].iloc[-1],
-                        'change_pct': ((taiex_data['Close'].iloc[-1] - taiex_data['Open'].iloc[-1]) / taiex_data['Open'].iloc[-1] * 100) if taiex_data['Open'].iloc[-1] > 0 else 0
+                        'change_pct': ((taiex_data['Close'].iloc[-1] - taiex_data['Open'].iloc[-1]) / taiex_data['Open'].iloc[-1] * 100) if taiex_data['Open'].iloc[-1] > 0 else 0,
+                        'data_source': 'yahoo'
                     }
             except Exception as e:
                 logger.warning(f"獲取加權指數失敗: {e}")
@@ -205,6 +239,75 @@ class StockDataFetcher:
         except Exception as e:
             logger.error(f"獲取市場指數失敗: {e}")
             return {}
+    
+    def get_realtime_quote(self, stock_code: str) -> Optional[Dict[str, Any]]:
+        """
+        獲取股票即時報價 (優先使用即時數據源)
+        
+        Args:
+            stock_code: 股票代碼
+            
+        Returns:
+            即時報價字典，失敗返回 None
+        """
+        if self.use_realtime and self.realtime_fetcher:
+            try:
+                quote = self.realtime_fetcher.get_realtime_quote(stock_code)
+                if quote:
+                    return quote
+            except Exception as e:
+                logger.warning(f"即時數據獲取失敗: {e}，切換到 Yahoo Finance")
+        
+        # 備用方案：使用 Yahoo Finance
+        try:
+            import yfinance as yf
+            ticker = yf.Ticker(f"{stock_code}.TW")
+            info = ticker.info
+            
+            if not info or 'regularMarketPrice' not in info:
+                return None
+            
+            price = info.get('regularMarketPrice', 0)
+            prev_close = info.get('previousClose', 0)
+            change = price - prev_close if prev_close > 0 else 0
+            change_pct = (change / prev_close * 100) if prev_close > 0 else 0
+            
+            return {
+                'code': stock_code,
+                'name': info.get('longName', stock_code),
+                'price': price,
+                'open': info.get('regularMarketOpen', 0),
+                'high': info.get('dayHigh', 0),
+                'low': info.get('dayLow', 0),
+                'volume': info.get('volume', 0),
+                'change': change,
+                'change_pct': change_pct,
+                'time': datetime.now().isoformat(),
+                'data_source': 'yahoo'
+            }
+        except Exception as e:
+            logger.error(f"獲取即時報價失敗: {e}")
+            return None
+    
+    def get_data_source_status(self) -> Dict[str, Any]:
+        """
+        獲取數據源狀態
+        
+        Returns:
+            數據源狀態字典
+        """
+        status = {
+            'realtime_enabled': self.use_realtime,
+            'sources': {}
+        }
+        
+        if self.use_realtime and self.realtime_fetcher:
+            try:
+                status['sources'] = self.realtime_fetcher.get_data_source_status()
+            except Exception as e:
+                logger.error(f"獲取數據源狀態失敗: {e}")
+        
+        return status
 
     def get_top_gainers(self, limit: int = 10) -> List[Dict[str, Any]]:
         """
