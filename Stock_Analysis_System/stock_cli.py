@@ -447,7 +447,7 @@ def report(args):
             
             try:
                 # 獲取公司資訊
-                company = fetcher.get_company_info(code)
+                company = fetcher.fundamental_fetcher.get_company_info(code)
                 if company:
                     print(f"🏢 公司: {company.get('name', 'N/A')}")
                     print(f"🏭 產業: {company.get('industry', 'N/A')}")
