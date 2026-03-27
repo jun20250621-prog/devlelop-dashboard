@@ -1,0 +1,26 @@
+{
+  "portfolio": {
+    "2331": {"name": "精英", "cost": 27.4, "shares": 1000, "stop_loss": 24, "stop_profit": 35, "industry": "電腦週邊", "application": "主機板/顯示卡"},
+    "5392": {"name": "能率", "cost": 52.6, "shares": 1000, "stop_loss": 47, "stop_profit": 65, "industry": "光電", "application": "鋁合金壓鑄"},
+    "3287": {"name": "廣寰科", "cost": 29.9, "shares": 1000, "stop_loss": 25.5, "stop_profit": 39, "industry": "電腦週邊", "application": "電競耳機/充电器"},
+    "2317": {"name": "鴻海", "cost": 224, "shares": 1000, "stop_loss": 200, "stop_profit": 270, "industry": "電子代工", "application": "AI伺服器/蘋果供應鏈"},
+    "00687B": {"name": "國泰20年美債", "cost": 29.35, "shares": 1000, "stop_loss": 28, "stop_profit": 32, "industry": "債券ETF", "application": "美國國債"},
+    "1773": {"name": "勝一", "cost": 147, "shares": 1000, "stop_loss": 130, "stop_profit": 180, "industry": "化學", "application": "有機溶劑"}
+  },
+  "watchlist": [
+    {"code": "2543", "name": "皇昌", "industry": "營建", "application": "營造工程"},
+    {"code": "3380", "name": "明泰", "industry": "電子", "application": "網通設備"},
+    {"code": "2049", "name": "上銀", "industry": "機械", "application": "線性滑軌"},
+    {"code": "6425", "name": "易發", "industry": "電子", "application": "半導體設備"},
+    {"code": "2485", "name": "兆赫", "industry": "電子", "application": "光纖通訊"},
+    {"code": "6443", "name": "元晶", "industry": "電子", "application": "太陽能模組"}
+  ],
+  "telegram": {"bot_token": "8294937993:AAFOY_rwU33p6ndhFrnDyjKFrSQ-_1KavOE", "chat_id": "8137433836"},
+  "schedule": {
+    "morning": "08:30",
+    "monitor": "09:30,10:30,11:30,13:00,14:00",
+    "evening": "15:00"
+  },
+  "alert": {"gain_threshold": 10, "loss_threshold": 5},
+  "itick_api_key": "ae7824e15cc34160bfe303310973ea9a77ee3c6b1c314202b2ff1bd23db02729"
+}
