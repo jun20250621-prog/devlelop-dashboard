@@ -11,7 +11,7 @@ COPY backend/ ./backend/
 COPY frontend/dist/ ./frontend/dist/
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Run
-CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8080"]
